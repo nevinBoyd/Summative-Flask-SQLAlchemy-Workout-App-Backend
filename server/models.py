@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import validates
 
 db = SQLAlchemy()
 
@@ -13,6 +14,20 @@ class Exercise(db.Model):
     workout_exercises = db.relationship('WorkoutExercise', backref='exercise', cascade="all, delete")
     workouts = db.relationship('Workout', secondary='workout_exercises', back_populates='exercises')
 
+    @validates('name')
+    def validate_name(self, key, value):
+        if not value or value.strip() == "":
+            raise ValueError("Exercise name must be provided.")
+        
+        return value
+
+    @validates('category')
+    def validate_category(self, key, value):
+        if not value or value.strip() == "":
+            raise ValueError("Exercise category must be provided.")
+        
+        return value
+
 class Workout(db.Model):
     __tablename__ = 'workouts'
 
@@ -24,6 +39,13 @@ class Workout(db.Model):
     workout_exercises = db.relationship('WorkoutExercise', backref='workout', cascade="all, delete")
     exercises = db.relationship('Exercise', secondary='workout_exercises', back_populates='workouts')
 
+    @validates('duration_minutes')
+    def validate_duration(self, key, value):
+        if value is not None and value < 0:
+            raise ValueError("Workout duration must be a positive number.")
+        
+        return value
+
 class WorkoutExercise(db.Model):
     __tablename__ = 'workout_exercises'
 
@@ -34,3 +56,10 @@ class WorkoutExercise(db.Model):
     reps = db.Column(db.Integer)
     sets = db.Column(db.Integer)
     duration_seconds = db.Column(db.Integer)
+
+    @validates('reps', 'sets', 'duration_seconds')
+    def validate_positive_int(self, key, value):
+        if value is not None and value < 0:
+            raise ValueError(f"{key} must be a positive integer.")
+        
+        return value
