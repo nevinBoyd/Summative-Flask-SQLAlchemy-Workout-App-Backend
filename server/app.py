@@ -1,7 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_migrate import Migrate
 from server.models import db, Exercise, Workout, WorkoutExercise
-from server.schemas import exercise_schema, exercises_schema, workout_schema, workouts_schema  
+from server.schemas import (
+    exercise_schema, 
+    exercises_schema, 
+    workout_schema, 
+    workouts_schema,
+    WorkoutExerciseSchema
+)      
 from datetime import datetime
 
 app = Flask(__name__)
@@ -137,6 +143,50 @@ def add_workout_exercise(workout_id, exercise_id):
     db.session.commit()
 
     return workout_schema.dump(workout), 201
+
+# GET all workout_exercises
+@app.get('/workout_exercises')
+def get_all_workout_exercises():
+    links = WorkoutExercise.query.all()
+    return WorkoutExerciseSchema(many=True).dump(links), 200
+
+# GET workout_exercise by id
+@app.get('/workout_exercises/<int:id>')
+def get_workout_exercise(id):
+    link = WorkoutExercise.query.get(id)
+    if not link:
+        return {"error": "WorkoutExercise not found"}, 404
+    return WorkoutExerciseSchema().dump(link), 200
+
+# PATCH workout_exercise
+@app.patch('/workout_exercises/<int:id>')
+def update_workout_exercise(id):
+    link = WorkoutExercise.query.get(id)
+    if not link:
+        return {"error": "WorkoutExercise not found"}, 404
+
+    data = request.get_json()
+
+    if "reps" in data:
+        link.reps = data["reps"]
+    if "sets" in data:
+        link.sets = data["sets"]
+    if "duration_seconds" in data:
+        link.duration_seconds = data["duration_seconds"]
+
+    db.session.commit()
+    return WorkoutExerciseSchema().dump(link), 200
+
+# DELETE workout_exercise
+@app.delete('/workout_exercises/<int:id>')
+def delete_workout_exercise(id):
+    link = WorkoutExercise.query.get(id)
+    if not link:
+        return {"error": "WorkoutExercise not found"}, 404
+    
+    db.session.delete(link)
+    db.session.commit()
+    return {"message": "WorkoutExercise deleted"}, 200
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
