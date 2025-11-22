@@ -2,13 +2,16 @@ from server.models import db, Exercise, Workout, WorkoutExercise
 from server.app import app
 from datetime import date
 
+# App context for seed database access
 with app.app_context():
-
+    
+    # Remove linked tables due to foreign dependecies
     print("Clearing old data...")
     WorkoutExercise.query.delete()
     Workout.query.delete()
     Exercise.query.delete()
 
+    # Core exercise set ~ category and equipment variations
     print("Seeding exercises...")
     squat = Exercise(name="Squat", category="Strength", equipment_needed=True)
     bench = Exercise(name="Bench Press", category="Strength", equipment_needed=True)
@@ -19,6 +22,7 @@ with app.app_context():
     db.session.add_all(exercises)
     db.session.commit()
 
+    # Dates used for ordering and visible history when testing
     print("Seeding workouts...")
     workout1 = Workout(date=date(2025, 1, 20), duration_minutes=45, notes="Leg day — feeling strong!")
     workout2 = Workout(date=date(2025, 1, 21), duration_minutes=30, notes="Upper body focus")
@@ -27,7 +31,8 @@ with app.app_context():
     workouts = [workout1, workout2, workout3]
     db.session.add_all(workouts)
     db.session.commit()
-
+    
+    # Reps-based and duration exercise relationships
     print("Linking exercises to workouts...")
     we1 = WorkoutExercise(workout=workout1, exercise=squat, reps=10, sets=4)
     we2 = WorkoutExercise(workout=workout2, exercise=bench, reps=8, sets=3)

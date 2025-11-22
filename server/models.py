@@ -3,6 +3,7 @@ from sqlalchemy.orm import validates
 
 db = SQLAlchemy()
 
+# Exercise model
 class Exercise(db.Model):
     __tablename__ = 'exercises'
 
@@ -13,7 +14,8 @@ class Exercise(db.Model):
 
     workout_exercises = db.relationship('WorkoutExercise', backref='exercise', cascade="all, delete")
     workouts = db.relationship('Workout', secondary='workout_exercises', back_populates='exercises')
-
+    
+    # Field validation
     @validates('name')
     def validate_name(self, key, value):
         if not value or value.strip() == "":
@@ -28,6 +30,7 @@ class Exercise(db.Model):
         
         return value
 
+# Workout model
 class Workout(db.Model):
     __tablename__ = 'workouts'
 
@@ -38,7 +41,7 @@ class Workout(db.Model):
 
     workout_exercises = db.relationship('WorkoutExercise', backref='workout', cascade="all, delete")
     exercises = db.relationship('Exercise', secondary='workout_exercises', back_populates='workouts')
-
+    
     @validates('duration_minutes')
     def validate_duration(self, key, value):
         if value is not None and value < 0:
@@ -46,17 +49,20 @@ class Workout(db.Model):
         
         return value
 
+# Join table ~ associated model
 class WorkoutExercise(db.Model):
     __tablename__ = 'workout_exercises'
 
     id = db.Column(db.Integer, primary_key=True)
     workout_id = db.Column(db.Integer, db.ForeignKey('workouts.id'), nullable=False)
     exercise_id = db.Column(db.Integer, db.ForeignKey('exercises.id'), nullable=False)
-
+    
+    # Optional performance details
     reps = db.Column(db.Integer)
     sets = db.Column(db.Integer)
     duration_seconds = db.Column(db.Integer)
-
+    
+    # Prevent negative workout metrics validation
     @validates('reps', 'sets', 'duration_seconds')
     def validate_positive_int(self, key, value):
         if value is not None and value < 0:
