@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_migrate import Migrate
 from server.models import db, Exercise, Workout, WorkoutExercise
 from server.schemas import exercise_schema, exercises_schema, workout_schema, workouts_schema  
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -37,21 +38,33 @@ def get_workout(id):
 @app.post('/workouts')
 def create_workout():
     data = request.get_json()
-    workout = Workout(
-        date=data.get("date"),
-        duration_minutes=data.get("duration_minutes"),
-        notes=data.get("notes"),
-    )
-    db.session.add(workout)
-    db.session.commit()
-    return workout_schema.dump(workout), 201
 
+    errors = workout_schema.validate(data)
+    if errors:
+        return {"errors": errors}, 400
+    
+    try:
+        workout = Workout(
+            date=datetime.strptime(data["date"], "%Y-%m-%d").date(),
+            duration_minutes=data.get("duration_minutes"),
+            notes=data.get("notes"),
+        )
+
+        db.session.add(workout)
+        db.session.commit()
+        return workout_schema.dump(workout), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}, 500
+    
 # DELETE workout
 @app.delete('/workouts/<int:id>')
 def delete_workout(id):
     workout = Workout.query.get(id)
     if not workout:
         return {"error": "Workout not found"}, 404
+    
     db.session.delete(workout)
     db.session.commit()
     return {"message": "Workout deleted"}, 200
@@ -75,8 +88,13 @@ def get_exercise(id):
 @app.post('/exercises')
 def create_exercise():
     data = request.get_json()
+
+    errors = exercise_schema.validate(data)
+    if errors:
+        return {"errors": errors}, 400
+    
     exercise = Exercise(
-        name=data.get("name"),
+        name=data["name"],
         category=data.get("category"),
         equipment_needed=data.get("equipment_needed", False),
     )
@@ -90,9 +108,35 @@ def delete_exercise(id):
     exercise = Exercise.query.get(id)
     if not exercise:
         return {"error": "Exercise not found"}, 404
+    
     db.session.delete(exercise)
     db.session.commit()
     return {"message": "Exercise deleted"}, 200
 
+@app.post('/workouts/<int:workout_id>/exercises/<int:exercise_id>/workout_exercises')
+def add_workout_exercise(workout_id, exercise_id):
+    data = request.get_json()
+
+    workout = Workout.query.get(workout_id)
+    if not workout:
+        return {"error": "Workout not found"}, 404
+    
+    exercise = Exercise.query.get(exercise_id)
+    if not exercise:
+        return {"error": "Exercise not found"}, 404
+
+    new_link = WorkoutExercise(
+        workout_id=workout_id,
+        exercise_id=exercise_id,
+        reps=data.get("reps"),
+        sets=data.get("sets"),
+        duration_seconds=data.get("duration_seconds")
+    )
+
+    db.session.add(new_link)
+    db.session.commit()
+
+    return workout_schema.dump(workout), 201
+
 if __name__ == '__main__':
-    app.run(port=5555, debug=True)
+    app.run(port=5000, debug=True)
