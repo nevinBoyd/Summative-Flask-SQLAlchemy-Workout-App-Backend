@@ -24,3 +24,10 @@ class WorkoutSchema(Schema):
     notes = fields.Str()
 
     workout_exercises = fields.List(fields.Nested(WorkoutExerciseSchema), dump_only=True)
+
+# Schema instances for use in routes
+exercise_schema = ExerciseSchema()
+exercises_schema = ExerciseSchema(many=True)
+
+workout_schema = WorkoutSchema()
+workouts_schema = WorkoutSchema(many=True)
