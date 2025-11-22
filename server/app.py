@@ -156,7 +156,7 @@ def get_workout_exercise(id):
     link = WorkoutExercise.query.get(id)
     if not link:
         return {"error": "WorkoutExercise not found"}, 404
-    return WorkoutExerciseSchema().dump(link), 200
+    return {"workout_exercise": WorkoutExerciseSchema().dump(link)}, 200
 
 # PATCH workout_exercise
 @app.patch('/workout_exercises/<int:id>')
@@ -175,7 +175,7 @@ def update_workout_exercise(id):
         link.duration_seconds = data["duration_seconds"]
 
     db.session.commit()
-    return WorkoutExerciseSchema().dump(link), 200
+    return {"message": "Exercise updated in workout"}, 200
 
 # DELETE workout_exercise
 @app.delete('/workout_exercises/<int:id>')
@@ -186,7 +186,7 @@ def delete_workout_exercise(id):
     
     db.session.delete(link)
     db.session.commit()
-    return {"message": "WorkoutExercise deleted"}, 200
+    return {"message": "Exercise removed from workout"}, 200
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
